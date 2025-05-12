@@ -58,5 +58,5 @@ func TestRedisStorage_ConcurrentAccess(t *testing.T) {
 			_, _, _ = s.Get(key)
 		}(i)
 	}
-	time.Sleep(1 * time.Second) // немного подождать, чтобы горутины успели выполниться
+	time.Sleep(1 * time.Second)
 }
