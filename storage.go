@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -12,36 +11,16 @@ type Storage interface {
 	Close() error
 }
 
-type Type int
-
-const (
-	TypeMemory Type = iota
-	TypeRedis
-)
-
-func New(storageType Type, config any) (Storage, error) {
-	switch storageType {
-	case TypeMemory:
-		interval, ok := config.(time.Duration)
-		if !ok {
-			interval = 5 * time.Minute
-		}
-		return NewMemoryStorage(interval), nil
-
-	case TypeRedis:
-		redisConfig, ok := config.(RedisConfig)
-		if !ok {
-			return nil, fmt.Errorf("invalid Redis config")
-		}
-		return NewRedisStorage(redisConfig)
-
-	default:
-		return nil, fmt.Errorf("unknown storage type")
-	}
-}
-
 type RedisConfig struct {
 	Addr     string
 	Password string
 	DB       int
+}
+
+func NewMemory(cleanupInterval time.Duration) (Storage, error) {
+	return NewMemoryStorage(cleanupInterval), nil
+}
+
+func NewRedis(config RedisConfig) (Storage, error) {
+	return NewRedisStorage(config)
 }

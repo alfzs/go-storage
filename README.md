@@ -36,7 +36,7 @@ import (
 )
 
 func main() {
-	store, err := storage.New(storage.TypeMemory, 2*time.Minute)
+	store, err := storage.NewMemory(2*time.Minute)
 	if err != nil {
 		panic(err)
 	}
@@ -60,7 +60,7 @@ func main() {
 ## Redis
 
 ```go
-store, err := storage.New(storage.TypeRedis, storage.RedisConfig{
+store, err := storage.NewRedis(storage.RedisConfig{
     Addr: "localhost:6379",
     Password: "",
     DB:   0,
