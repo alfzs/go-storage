@@ -10,7 +10,7 @@ import (
 )
 
 func TestMemoryStorage_BasicOperations(t *testing.T) {
-	s := storage.NewMemoryStorage(50 * time.Millisecond)
+	s := storage.NewMemory(50 * time.Millisecond)
 
 	require.NoError(t, s.Set("foo", "bar", 0))
 
@@ -28,7 +28,7 @@ func TestMemoryStorage_BasicOperations(t *testing.T) {
 }
 
 func TestMemoryStorage_TTLExpiration(t *testing.T) {
-	s := storage.NewMemoryStorage(10 * time.Millisecond)
+	s := storage.NewMemory(10 * time.Millisecond)
 
 	require.NoError(t, s.Set("temp", "value", 20*time.Millisecond))
 	time.Sleep(50 * time.Millisecond)
@@ -38,7 +38,7 @@ func TestMemoryStorage_TTLExpiration(t *testing.T) {
 }
 
 func TestMemoryStorage_ConcurrentAccess(t *testing.T) {
-	s := storage.NewMemoryStorage(1 * time.Second)
+	s := storage.NewMemory(1 * time.Second)
 	defer s.Close()
 
 	wg := sync.WaitGroup{}
