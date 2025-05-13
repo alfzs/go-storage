@@ -18,9 +18,9 @@ type RedisConfig struct {
 }
 
 func NewMemory(cleanupInterval time.Duration) (Storage, error) {
-	return NewMemoryStorage(cleanupInterval), nil
+	return newMemoryStorage(cleanupInterval), nil
 }
 
 func NewRedis(config RedisConfig) (Storage, error) {
-	return NewRedisStorage(config)
+	return newRedisStorage(config)
 }

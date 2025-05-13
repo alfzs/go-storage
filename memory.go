@@ -11,7 +11,7 @@ type memoryStorage struct {
 	stop  chan struct{}
 }
 
-func NewMemoryStorage(cleanupInterval time.Duration) Storage {
+func newMemoryStorage(cleanupInterval time.Duration) Storage {
 	s := &memoryStorage{
 		items: make(map[string]item),
 		stop:  make(chan struct{}),

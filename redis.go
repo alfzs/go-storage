@@ -14,7 +14,7 @@ type redisStorage struct {
 	ctx    context.Context
 }
 
-func NewRedisStorage(cfg RedisConfig) (Storage, error) {
+func newRedisStorage(cfg RedisConfig) (Storage, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     cfg.Addr,
 		Password: cfg.Password,

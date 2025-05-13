@@ -9,7 +9,7 @@ import (
 )
 
 func newTestRedisStorage(t *testing.T) storage.Storage {
-	s, err := storage.NewRedisStorage(storage.RedisConfig{
+	s, err := storage.NewRedis(storage.RedisConfig{
 		Addr:     "localhost:6379",
 		Password: "",
 		DB:       0,
