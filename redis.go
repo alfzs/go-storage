@@ -9,12 +9,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type redisStorage struct {
+type redisStorage[T any] struct {
 	client *redis.Client
 	ctx    context.Context
 }
 
-func newRedisStorage(cfg RedisConfig) (Storage, error) {
+func newRedisStorage[T any](cfg RedisConfig) (Storage[T], error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     cfg.Addr,
 		Password: cfg.Password,
@@ -26,13 +26,13 @@ func newRedisStorage(cfg RedisConfig) (Storage, error) {
 		return nil, fmt.Errorf("redis ping failed: %w", err)
 	}
 
-	return &redisStorage{
+	return &redisStorage[T]{
 		client: client,
 		ctx:    ctx,
 	}, nil
 }
 
-func (s *redisStorage) Set(key string, value any, ttl time.Duration) error {
+func (s *redisStorage[T]) Set(key string, value T, ttl time.Duration) error {
 	ctx, cancel := context.WithTimeout(s.ctx, 1*time.Second)
 	defer cancel()
 
@@ -55,27 +55,29 @@ func (s *redisStorage) Set(key string, value any, ttl time.Duration) error {
 	return nil
 }
 
-func (s *redisStorage) Get(key string) (any, bool, error) {
+func (s *redisStorage[T]) Get(key string) (T, bool, error) {
+	var zero T
+
 	ctx, cancel := context.WithTimeout(s.ctx, 1*time.Second)
 	defer cancel()
 
 	val, err := s.client.Get(ctx, key).Result()
 	if err == redis.Nil {
-		return nil, false, nil
+		return zero, false, nil
 	}
 	if err != nil {
-		return nil, false, fmt.Errorf("redis get failed: %w", err)
+		return zero, false, fmt.Errorf("redis get failed: %w", err)
 	}
 
-	var out any
+	var out T
 	if err := json.Unmarshal([]byte(val), &out); err != nil {
-		return nil, false, fmt.Errorf("unmarshal failed: %w", err)
+		return zero, false, fmt.Errorf("unmarshal failed: %w", err)
 	}
 
 	return out, true, nil
 }
 
-func (s *redisStorage) Delete(key string) error {
+func (s *redisStorage[T]) Delete(key string) error {
 	ctx, cancel := context.WithTimeout(s.ctx, 1*time.Second)
 	defer cancel()
 
@@ -85,6 +87,6 @@ func (s *redisStorage) Delete(key string) error {
 	return nil
 }
 
-func (s *redisStorage) Close() error {
+func (s *redisStorage[T]) Close() error {
 	return s.client.Close()
 }

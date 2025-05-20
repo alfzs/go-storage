@@ -4,9 +4,9 @@ import (
 	"time"
 )
 
-type Storage interface {
-	Set(key string, value any, ttl time.Duration) error
-	Get(key string) (any, bool, error)
+type Storage[T any] interface {
+	Set(key string, value T, ttl time.Duration) error
+	Get(key string) (T, bool, error)
 	Delete(key string) error
 	Close() error
 }
@@ -17,10 +17,10 @@ type RedisConfig struct {
 	DB       int
 }
 
-func NewMemory(cleanupInterval time.Duration) (Storage, error) {
-	return newMemoryStorage(cleanupInterval), nil
+func NewMemory[T any](cleanupInterval time.Duration) (Storage[T], error) {
+	return newMemoryStorage[T](cleanupInterval), nil
 }
 
-func NewRedis(config RedisConfig) (Storage, error) {
-	return newRedisStorage(config)
+func NewRedis[T any](config RedisConfig) (Storage[T], error) {
+	return newRedisStorage[T](config)
 }

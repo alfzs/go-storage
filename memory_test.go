@@ -9,8 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMemoryStorage_BasicOperations(t *testing.T) {
-	s, _ := storage.NewMemory(50 * time.Millisecond)
+func TestMemoryStorage_StringOperations(t *testing.T) {
+	s, _ := storage.NewMemory[string](50 * time.Millisecond)
+	defer s.Close()
 
 	require.NoError(t, s.Set("foo", "bar", 0))
 
@@ -23,12 +24,29 @@ func TestMemoryStorage_BasicOperations(t *testing.T) {
 
 	_, found, _ = s.Get("foo")
 	require.False(t, found)
+}
 
-	require.NoError(t, s.Close())
+func TestMemoryStorage_StructOperations(t *testing.T) {
+	type testStruct struct {
+		Name string
+		Age  int
+	}
+
+	s, _ := storage.NewMemory[testStruct](50 * time.Millisecond)
+	defer s.Close()
+
+	testData := testStruct{Name: "Bob", Age: 30}
+	require.NoError(t, s.Set("struct", testData, 0))
+
+	val, found, err := s.Get("struct")
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Equal(t, testData, val)
 }
 
 func TestMemoryStorage_TTLExpiration(t *testing.T) {
-	s, _ := storage.NewMemory(10 * time.Millisecond)
+	s, _ := storage.NewMemory[string](10 * time.Millisecond)
+	defer s.Close()
 
 	require.NoError(t, s.Set("temp", "value", 20*time.Millisecond))
 	time.Sleep(50 * time.Millisecond)
@@ -38,7 +56,7 @@ func TestMemoryStorage_TTLExpiration(t *testing.T) {
 }
 
 func TestMemoryStorage_ConcurrentAccess(t *testing.T) {
-	s, _ := storage.NewMemory(1 * time.Second)
+	s, _ := storage.NewMemory[int](1 * time.Second)
 	defer s.Close()
 
 	wg := sync.WaitGroup{}

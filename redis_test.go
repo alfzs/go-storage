@@ -1,6 +1,7 @@
 package storage_test
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -8,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newTestRedisStorage(t *testing.T) storage.Storage {
-	s, err := storage.NewRedis(storage.RedisConfig{
+func newTestRedisStorage[T any](t *testing.T) storage.Storage[T] {
+	s, err := storage.NewRedis[T](storage.RedisConfig{
 		Addr:     "localhost:6379",
 		Password: "",
 		DB:       0,
@@ -18,8 +19,8 @@ func newTestRedisStorage(t *testing.T) storage.Storage {
 	return s
 }
 
-func TestRedisStorage_BasicOperations(t *testing.T) {
-	s := newTestRedisStorage(t)
+func TestRedisStorage_StringOperations(t *testing.T) {
+	s := newTestRedisStorage[string](t)
 	defer s.Close()
 
 	require.NoError(t, s.Set("foo", "bar", 0))
@@ -35,8 +36,26 @@ func TestRedisStorage_BasicOperations(t *testing.T) {
 	require.False(t, found)
 }
 
+func TestRedisStorage_StructOperations(t *testing.T) {
+	type testStruct struct {
+		Name string
+		Age  int
+	}
+
+	s := newTestRedisStorage[testStruct](t)
+	defer s.Close()
+
+	testData := testStruct{Name: "Alice", Age: 25}
+	require.NoError(t, s.Set("struct", testData, 0))
+
+	val, found, err := s.Get("struct")
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Equal(t, testData, val)
+}
+
 func TestRedisStorage_TTL(t *testing.T) {
-	s := newTestRedisStorage(t)
+	s := newTestRedisStorage[string](t)
 	defer s.Close()
 
 	require.NoError(t, s.Set("temp", "value", 1*time.Second))
@@ -48,15 +67,23 @@ func TestRedisStorage_TTL(t *testing.T) {
 }
 
 func TestRedisStorage_ConcurrentAccess(t *testing.T) {
-	s := newTestRedisStorage(t)
+	s := newTestRedisStorage[int](t)
 	defer s.Close()
 
 	key := "concurrent"
+	var wg sync.WaitGroup
+
 	for i := range 100 {
+		wg.Add(1)
 		go func(i int) {
-			_ = s.Set(key, i, 0)
-			_, _, _ = s.Get(key)
+			defer wg.Done()
+			require.NoError(t, s.Set(key, i, 0))
+			val, found, err := s.Get(key)
+			require.NoError(t, err)
+			require.True(t, found)
+			_ = val // Проверка значения не имеет смысла в конкурентном тесте
 		}(i)
 	}
-	time.Sleep(1 * time.Second)
+
+	wg.Wait()
 }
