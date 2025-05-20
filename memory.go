@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"sync"
 	"time"
 )
@@ -29,7 +30,7 @@ func (i item[T]) isExpired() bool {
 	return i.expiration > 0 && time.Now().UnixNano() > i.expiration
 }
 
-func (s *memoryStorage[T]) Set(key string, value T, ttl time.Duration) error {
+func (s *memoryStorage[T]) Set(ctx context.Context, key string, value T, ttl time.Duration) error {
 	var expiration int64
 	if ttl > 0 {
 		expiration = time.Now().Add(ttl).UnixNano()
@@ -45,7 +46,7 @@ func (s *memoryStorage[T]) Set(key string, value T, ttl time.Duration) error {
 	return nil
 }
 
-func (s *memoryStorage[T]) Get(key string) (T, bool, error) {
+func (s *memoryStorage[T]) Get(ctx context.Context, key string) (T, bool, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -57,7 +58,7 @@ func (s *memoryStorage[T]) Get(key string) (T, bool, error) {
 	return item.value, true, nil
 }
 
-func (s *memoryStorage[T]) Delete(key string) error {
+func (s *memoryStorage[T]) Delete(ctx context.Context, key string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.items, key)

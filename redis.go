@@ -11,7 +11,6 @@ import (
 
 type redisStorage[T any] struct {
 	client *redis.Client
-	ctx    context.Context
 }
 
 func newRedisStorage[T any](cfg RedisConfig) (Storage[T], error) {
@@ -26,14 +25,11 @@ func newRedisStorage[T any](cfg RedisConfig) (Storage[T], error) {
 		return nil, fmt.Errorf("redis ping failed: %w", err)
 	}
 
-	return &redisStorage[T]{
-		client: client,
-		ctx:    ctx,
-	}, nil
+	return &redisStorage[T]{client: client}, nil
 }
 
-func (s *redisStorage[T]) Set(key string, value T, ttl time.Duration) error {
-	ctx, cancel := context.WithTimeout(s.ctx, 1*time.Second)
+func (s *redisStorage[T]) Set(ctx context.Context, key string, value T, ttl time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
 	data, err := json.Marshal(value)
@@ -55,10 +51,10 @@ func (s *redisStorage[T]) Set(key string, value T, ttl time.Duration) error {
 	return nil
 }
 
-func (s *redisStorage[T]) Get(key string) (T, bool, error) {
+func (s *redisStorage[T]) Get(ctx context.Context, key string) (T, bool, error) {
 	var zero T
 
-	ctx, cancel := context.WithTimeout(s.ctx, 1*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
 	val, err := s.client.Get(ctx, key).Result()
@@ -77,8 +73,8 @@ func (s *redisStorage[T]) Get(key string) (T, bool, error) {
 	return out, true, nil
 }
 
-func (s *redisStorage[T]) Delete(key string) error {
-	ctx, cancel := context.WithTimeout(s.ctx, 1*time.Second)
+func (s *redisStorage[T]) Delete(ctx context.Context, key string) error {
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
 	if err := s.client.Del(ctx, key).Err(); err != nil {

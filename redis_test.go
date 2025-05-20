@@ -1,6 +1,7 @@
 package storage_test
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
@@ -20,19 +21,20 @@ func newTestRedisStorage[T any](t *testing.T) storage.Storage[T] {
 }
 
 func TestRedisStorage_StringOperations(t *testing.T) {
+	ctx := context.Background()
 	s := newTestRedisStorage[string](t)
 	defer s.Close()
 
-	require.NoError(t, s.Set("foo", "bar", 0))
+	require.NoError(t, s.Set(ctx, "foo", "bar", 0))
 
-	val, found, err := s.Get("foo")
+	val, found, err := s.Get(ctx, "foo")
 	require.NoError(t, err)
 	require.True(t, found)
 	require.Equal(t, "bar", val)
 
-	require.NoError(t, s.Delete("foo"))
+	require.NoError(t, s.Delete(ctx, "foo"))
 
-	_, found, _ = s.Get("foo")
+	_, found, _ = s.Get(ctx, "foo")
 	require.False(t, found)
 }
 
@@ -44,31 +46,34 @@ func TestRedisStorage_StructOperations(t *testing.T) {
 
 	s := newTestRedisStorage[testStruct](t)
 	defer s.Close()
+	ctx := context.Background()
 
 	testData := testStruct{Name: "Alice", Age: 25}
-	require.NoError(t, s.Set("struct", testData, 0))
+	require.NoError(t, s.Set(ctx, "struct", testData, 0))
 
-	val, found, err := s.Get("struct")
+	val, found, err := s.Get(ctx, "struct")
 	require.NoError(t, err)
 	require.True(t, found)
 	require.Equal(t, testData, val)
 }
 
 func TestRedisStorage_TTL(t *testing.T) {
+	ctx := context.Background()
 	s := newTestRedisStorage[string](t)
 	defer s.Close()
 
-	require.NoError(t, s.Set("temp", "value", 1*time.Second))
+	require.NoError(t, s.Set(ctx, "temp", "value", 1*time.Second))
 
 	time.Sleep(2 * time.Second)
 
-	_, found, _ := s.Get("temp")
+	_, found, _ := s.Get(ctx, "temp")
 	require.False(t, found)
 }
 
 func TestRedisStorage_ConcurrentAccess(t *testing.T) {
 	s := newTestRedisStorage[int](t)
 	defer s.Close()
+	ctx := context.Background()
 
 	key := "concurrent"
 	var wg sync.WaitGroup
@@ -77,8 +82,8 @@ func TestRedisStorage_ConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			require.NoError(t, s.Set(key, i, 0))
-			val, found, err := s.Get(key)
+			require.NoError(t, s.Set(ctx, key, i, 0))
+			val, found, err := s.Get(ctx, key)
 			require.NoError(t, err)
 			require.True(t, found)
 			_ = val // Проверка значения не имеет смысла в конкурентном тесте

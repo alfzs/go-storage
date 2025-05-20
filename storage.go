@@ -1,14 +1,15 @@
 package storage
 
 import (
+	"context"
 	"time"
 )
 
 // Методы хранилища
 type Storage[T any] interface {
-	Set(key string, value T, ttl time.Duration) error
-	Get(key string) (T, bool, error)
-	Delete(key string) error
+	Set(ctx context.Context, key string, value T, ttl time.Duration) error
+	Get(ctx context.Context, key string) (T, bool, error)
+	Delete(ctx context.Context, key string) error
 	Close() error
 }
 
