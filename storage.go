@@ -6,10 +6,16 @@ import (
 )
 
 type Storage[T any] interface {
+	// Базовые операции ключ-значение
 	Set(ctx context.Context, key string, value T, ttl time.Duration) error
 	Get(ctx context.Context, key string) (T, bool, error)
 	Delete(ctx context.Context, key string) error
 	Close() error
+
+	// Операции с очередями
+	Enqueue(ctx context.Context, queueName string, value T) error
+	Dequeue(ctx context.Context, queueName string) (T, bool, error)
+	QueueLen(ctx context.Context, queueName string) (int64, error)
 }
 
 type RedisConfig struct {

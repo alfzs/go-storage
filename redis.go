@@ -83,6 +83,59 @@ func (s *redisStorage[T]) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
+// Enqueue добавляет элемент в очередь
+func (s *redisStorage[T]) Enqueue(ctx context.Context, queueName string, value T) error {
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	data, err := json.Marshal(value)
+	if err != nil {
+		return fmt.Errorf("marshal failed: %w", err)
+	}
+
+	if err := s.client.RPush(ctx, queueName, data).Err(); err != nil {
+		return fmt.Errorf("redis rpush failed: %w", err)
+	}
+
+	return nil
+}
+
+// Dequeue извлекает и удаляет элемент из очереди
+func (s *redisStorage[T]) Dequeue(ctx context.Context, queueName string) (T, bool, error) {
+	var zero T
+
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	val, err := s.client.LPop(ctx, queueName).Result()
+	if err == redis.Nil {
+		return zero, false, nil
+	}
+	if err != nil {
+		return zero, false, fmt.Errorf("redis lpop failed: %w", err)
+	}
+
+	var out T
+	if err := json.Unmarshal([]byte(val), &out); err != nil {
+		return zero, false, fmt.Errorf("unmarshal failed: %w", err)
+	}
+
+	return out, true, nil
+}
+
+// QueueLength возвращает длину очереди
+func (s *redisStorage[T]) QueueLength(ctx context.Context, queueName string) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	length, err := s.client.LLen(ctx, queueName).Result()
+	if err != nil {
+		return 0, fmt.Errorf("redis llen failed: %w", err)
+	}
+
+	return length, nil
+}
+
 func (s *redisStorage[T]) Close() error {
 	return s.client.Close()
 }
