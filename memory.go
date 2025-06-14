@@ -119,7 +119,7 @@ func (s *memoryStorage[T]) Dequeue(ctx context.Context, queueName string) (T, bo
 }
 
 // QueueLength возвращает текущую длину очереди
-func (s *memoryStorage[T]) QueueLength(ctx context.Context, queueName string) (int64, error) {
+func (s *memoryStorage[T]) QueueLen(ctx context.Context, queueName string) (int64, error) {
 	s.queueMu.RLock()
 	defer s.queueMu.RUnlock()
 

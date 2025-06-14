@@ -124,7 +124,7 @@ func (s *redisStorage[T]) Dequeue(ctx context.Context, queueName string) (T, boo
 }
 
 // QueueLength возвращает длину очереди
-func (s *redisStorage[T]) QueueLength(ctx context.Context, queueName string) (int64, error) {
+func (s *redisStorage[T]) QueueLen(ctx context.Context, queueName string) (int64, error) {
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
