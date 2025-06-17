@@ -33,6 +33,25 @@ func (i item[T]) isExpired() bool {
 	return i.expiration > 0 && time.Now().UnixNano() > i.expiration
 }
 
+func (s *memoryStorage[T]) Close() error {
+	close(s.stop)
+	return nil
+}
+
+func (s *memoryStorage[T]) runGC(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			s.deleteExpired()
+		case <-s.stop:
+			return
+		}
+	}
+}
+
 func (s *memoryStorage[T]) Set(ctx context.Context, key string, value T, ttl time.Duration) error {
 	var expiration int64
 	if ttl > 0 {
@@ -68,25 +87,6 @@ func (s *memoryStorage[T]) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
-func (s *memoryStorage[T]) Close() error {
-	close(s.stop)
-	return nil
-}
-
-func (s *memoryStorage[T]) runGC(interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			s.deleteExpired()
-		case <-s.stop:
-			return
-		}
-	}
-}
-
 // Enqueue добавляет элемент в конец очереди
 func (s *memoryStorage[T]) Enqueue(ctx context.Context, queueName string, value T) error {
 	s.queueMu.Lock()
@@ -116,6 +116,40 @@ func (s *memoryStorage[T]) Dequeue(ctx context.Context, queueName string) (T, bo
 	}
 
 	return value, true, nil
+}
+
+// Peek возвращает первый элемент из очереди без его удаления
+func (s *memoryStorage[T]) Peek(ctx context.Context, queueName string) (T, bool, error) {
+	s.queueMu.RLock()
+	defer s.queueMu.RUnlock()
+
+	var zero T
+	queue, exists := s.queues[queueName]
+	if !exists || len(queue) == 0 {
+		return zero, false, nil
+	}
+
+	return queue[0], true, nil
+}
+
+// Remove удаляет первый элемент из очереди без его возврата
+func (s *memoryStorage[T]) Remove(ctx context.Context, queueName string) (bool, error) {
+	s.queueMu.Lock()
+	defer s.queueMu.Unlock()
+
+	queue, exists := s.queues[queueName]
+	if !exists || len(queue) == 0 {
+		return false, nil
+	}
+
+	s.queues[queueName] = queue[1:] // Удаляем первый элемент
+
+	// Если очередь пуста, удаляем её из мапы
+	if len(s.queues[queueName]) == 0 {
+		delete(s.queues, queueName)
+	}
+
+	return true, nil
 }
 
 // QueueLength возвращает текущую длину очереди

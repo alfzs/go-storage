@@ -123,6 +123,47 @@ func (s *redisStorage[T]) Dequeue(ctx context.Context, queueName string) (T, boo
 	return out, true, nil
 }
 
+// Peek получает элемент из начала очереди без его удаления
+func (s *redisStorage[T]) Peek(ctx context.Context, queueName string) (T, bool, error) {
+	var zero T
+
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	// Используем LIndex с индексом 0 для получения первого элемента
+	val, err := s.client.LIndex(ctx, queueName, 0).Result()
+	if err == redis.Nil {
+		return zero, false, nil
+	}
+	if err != nil {
+		return zero, false, fmt.Errorf("redis lindex failed: %w", err)
+	}
+
+	var out T
+	if err := json.Unmarshal([]byte(val), &out); err != nil {
+		return zero, false, fmt.Errorf("unmarshal failed: %w", err)
+	}
+
+	return out, true, nil
+}
+
+// Remove удаляет один элемент из начала очереди без возврата
+func (s *redisStorage[T]) Remove(ctx context.Context, queueName string) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	// Используем LPop, но игнорируем возвращаемое значение
+	_, err := s.client.LPop(ctx, queueName).Result()
+	if err == redis.Nil {
+		return false, nil // Очередь пуста - считаем это успешной операцией
+	}
+	if err != nil {
+		return false, fmt.Errorf("redis lpop failed: %w", err)
+	}
+
+	return true, nil
+}
+
 // QueueLength возвращает длину очереди
 func (s *redisStorage[T]) QueueLen(ctx context.Context, queueName string) (int64, error) {
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)

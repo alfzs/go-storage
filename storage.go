@@ -15,6 +15,8 @@ type Storage[T any] interface {
 	// Операции с очередями
 	Enqueue(ctx context.Context, queueName string, value T) error
 	Dequeue(ctx context.Context, queueName string) (T, bool, error)
+	Peek(ctx context.Context, queueName string) (T, bool, error)
+	Remove(ctx context.Context, queueName string) (bool, error)
 	QueueLen(ctx context.Context, queueName string) (int64, error)
 }
 
