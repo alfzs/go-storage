@@ -6,7 +6,7 @@ import (
 )
 
 type Storage[T any] interface {
-	// Базовые операции ключ-значение
+	// Операции ключ-значение
 	Set(ctx context.Context, key string, value T, ttl time.Duration) error
 	Get(ctx context.Context, key string) (T, bool, error)
 	Delete(ctx context.Context, key string) error
