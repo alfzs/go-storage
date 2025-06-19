@@ -21,6 +21,7 @@ type redisStorage[T any] struct {
 func newRedisStorage[T any](cfg RedisConfig) (Storage[T], error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     cfg.Addr,     // Адрес Redis сервера
+		Username: cfg.Username, // Имя пользователя
 		Password: cfg.Password, // Пароль (если требуется)
 		DB:       cfg.DB,       // Номер базы данных
 	})

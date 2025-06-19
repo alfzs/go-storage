@@ -86,6 +86,7 @@ type Storage[T any] interface {
 // RedisConfig содержит параметры подключения к Redis
 type RedisConfig struct {
 	Addr     string // Адрес сервера Redis (например, "localhost:6379")
+	Username string // Имя пользователя
 	Password string // Пароль для аутентификации (пустая строка если не требуется)
 	DB       int    // Номер базы данных
 }
